@@ -19,7 +19,6 @@ from openpyxl.styles import PatternFill
 from difflib import SequenceMatcher
 import string
 import numpy as np
-from tqdm import tqdm
 
 import streamlit as st
 
@@ -73,7 +72,7 @@ class data_static:
 
     def relaxed_search_qi(self, Table_contents_df):
         Table_contents_df['命名存在错误'] = False
-        for index, row in tqdm(Table_contents_df.iterrows(), desc="relaxed_search_qi"):
+        for index, row in Table_contents_df.iterrows():
             if not row['已入库']:
                 # 生成pdf的上一级目录
                 try:
@@ -99,7 +98,7 @@ class data_static:
     def strict_search(self, Table_contents_df):
         Table_contents_df['已入库'] = False
         mask = []
-        for index, row in tqdm(Table_contents_df.iterrows(),desc='strict_search'):
+        for index, row in Table_contents_df.iterrows():
             matched = False
             # 提取刊名、期名和题名
             journal_name = row['刊名']
