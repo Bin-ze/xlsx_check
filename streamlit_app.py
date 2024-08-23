@@ -5,6 +5,40 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 import prettytable as pt
 
+def highlight_errors(row, error_columns):
+    """
+    标记错误列，返回带有样式的单元格
+    """
+    return ['background-color: yellow' if col in error_columns else '' for col in row.index]
+
+def display_validation_errors(df, validation_errors):
+
+    # 初始化一个字典来保存每行的错误列信息
+    error_columns_dict = {}
+
+    for col_name, err_msg, err_indices in validation_errors:
+        # 初始化一个空的 DataFrame，用于存放所有错误行
+        error_rows = pd.DataFrame()
+        st.write(f"{err_msg}:")
+        for idx in err_indices:
+            idx -= 2
+            # 将错误列记录在 error_columns_dict 中
+            if idx in error_columns_dict:
+                error_columns_dict[idx].append(col_name)
+            else:
+                error_columns_dict[idx] = [col_name]
+
+            # 将错误行拼接到 error_rows 中，并包含实际的 Excel 行号
+            row_with_index = df.loc[[idx]].copy()
+            row_with_index.insert(0, 'Excel 行号', idx + 2)  # 在最前面插入一列显示实际的 Excel 行号
+            error_rows = pd.concat([error_rows, row_with_index])
+            # 将错误行拼接到 error_rows 中
+            # error_rows = pd.concat([error_rows, df.loc[[idx]]])
+
+        # 使用 Styler 在展示时标记错误列
+        styled_df = error_rows.style.apply(lambda row: highlight_errors(row, error_columns_dict.get(row.name, [])), axis=1)
+        st.dataframe(styled_df)
+
 class XlsxCheck:
     def __init__(self, xlsx_root):
         self.xlsx_root = xlsx_root
@@ -87,7 +121,7 @@ class XlsxCheck:
         ws = self.mark_errors(df, validation_errors)
         output_path = str(Path(file.name).stem + '_错误检查.xlsx')
         output_path = self.export_xlsx(ws, output_path)
-        return output_path, validation_errors
+        return output_path, validation_errors, df
 
 
 def main():
@@ -97,10 +131,21 @@ def main():
     if uploaded_file is not None:
         xlsx_checker = XlsxCheck(uploaded_file)
         if st.button("执行检查"):
-            output_path, validation_errors = xlsx_checker(uploaded_file)
+            output_path, validation_errors, df = xlsx_checker(uploaded_file)
             st.success(f"检查完成，结果已保存: {output_path}")
             st.write("错误信息如下所示")
             xlsx_checker.format_res(validation_errors)
+            if validation_errors:
+                st.write("发现以下错误：")
+                display_validation_errors(df, validation_errors)
+                # for col_name, err_msg, err_df in validation_errors:
+                #     error_rows_df = pd.DataFrame()
+                #     st.write(f"{err_msg}:")
+                #     # for idx in err_df:
+                #         # st.dataframe(df.loc[idx])
+                #     error_rows_df = pd.concat([error_rows_df, df.loc[err_df]], axis=0)
+                #     st.dataframe(error_rows_df)
+
             with open(output_path, "rb") as file:
                 btn = st.download_button(
                     label="下载标记后的文件",
