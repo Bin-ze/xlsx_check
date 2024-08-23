@@ -98,7 +98,7 @@ def main():
         xlsx_checker = XlsxCheck(uploaded_file)
         if st.button("执行检查"):
             output_path, validation_errors = xlsx_checker(uploaded_file)
-            st.success(f"检查完成，结果已保存为: {output_path}")
+            st.success(f"检查完成，结果已保存: {output_path}")
             st.write("错误信息如下所示")
             xlsx_checker.format_res(validation_errors)
             with open(output_path, "rb") as file:
